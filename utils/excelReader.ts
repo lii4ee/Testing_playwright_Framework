@@ -12,31 +12,37 @@ export interface TestRow {
 }
 
 export async function readTestData(
-  filePath: string,
-  sheetName: string
+  filePath: string = "test-data/testData.xlsx",
+  sheetName: string = "Login"
 ): Promise<TestRow[]> {
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.readFile(filePath);
-  
-  const ws = wb.getWorksheet(sheetName);
-  if (!ws) throw new Error(`Sheet "${sheetName}" not found`);
+    try{
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.readFile(filePath);
+        
+        const ws = wb.getWorksheet(sheetName);
+        if (!ws) throw new Error(`Sheet "${sheetName}" not found`);
 
-  const headers: string[] = [];
-  const rows: TestRow[] = [];
+        const headers: string[] = [];
+        const rows: TestRow[] = [];
 
-  ws.eachRow((row, rowNum) => {
-    if (rowNum === 1) {
-      row.eachCell(cell => headers.push(String(cell.value)));
-      return;
+        ws.eachRow((row, rowNum) => {
+            if (rowNum === 1) {
+            row.eachCell(cell => headers.push(String(cell.value)));
+            return;
+            }
+            const obj: any = {};
+            row.eachCell((cell, colNum) => {
+            obj[headers[colNum - 1]] = cell.value;
+            });
+            if (obj.execute === 'Y') rows.push(obj as TestRow);
+        });
+
+    return rows;
+    
+    } catch (error: any) {
+        throw new Error(`Failed to read Excel file at ${filePath}: ${error?.message ?? String(error)}`);
     }
-    const obj: any = {};
-    row.eachCell((cell, colNum) => {
-      obj[headers[colNum - 1]] = cell.value;
-    });
-    if (obj.execute === 'Y') rows.push(obj as TestRow);
-  });
-
-  return rows;
+  
 }
 
 export async function writeResult(
